@@ -93,6 +93,23 @@ func pwaHeadInjection(basePath, pageName string) []byte {
 	return []byte(`<link rel="manifest" href="` + htmlpkg.EscapeString(basePath+"manifest.webmanifest") + `"><script data-cfasync="false" defer src="` + htmlpkg.EscapeString(basePath+"pwa-register.js") + `"></script>`)
 }
 
+func runtimeGlobals(basePath, pageName string) string {
+	baseJSON, _ := json.Marshal(basePath)
+	brandJSON, _ := json.Marshal(config.GetBrandName())
+	protocolsJSON, _ := json.Marshal(config.GetEnabledProtocols())
+
+	script := `window.X_UI_BASE_PATH=` + string(baseJSON)
+	script += `;window.X_UI_BRAND_NAME=` + string(brandJSON)
+	script += `;window.X_UI_ENABLED_PROTOCOLS=` + string(protocolsJSON)
+	if pageName != "login.html" {
+		versionJSON, _ := json.Marshal(config.GetPanelVersion())
+		dbTypeJSON, _ := json.Marshal(config.GetDBKind())
+		script += `;window.X_UI_CUR_VER=` + string(versionJSON)
+		script += `;window.X_UI_DB_TYPE=` + string(dbTypeJSON)
+	}
+	return script
+}
+
 func serveDistPage(c *gin.Context, name string) {
 	body, err := fs.ReadFile(distFS, "dist/"+name)
 	if err != nil {
@@ -110,16 +127,6 @@ func serveDistPage(c *gin.Context, name string) {
 		body = bytes.ReplaceAll(body, []byte(`href="/assets/`), []byte(`href="`+basePath+`assets/`))
 	}
 
-	jsEscape := strings.NewReplacer(
-		`\`, `\\`,
-		`"`, `\"`,
-		"\n", `\n`,
-		"\r", `\r`,
-		"<", `<`,
-		">", `>`,
-		"&", `&`,
-	)
-	escapedBase := jsEscape.Replace(basePath)
 	csrfToken, err := session.EnsureCSRFToken(c)
 	if err != nil {
 		logger.Warning("Unable to mint CSRF token for", name+":", err)
@@ -132,13 +139,7 @@ func serveDistPage(c *gin.Context, name string) {
 	if nonce := c.GetString("csp_nonce"); nonce != "" {
 		nonceAttr = ` nonce="` + htmlpkg.EscapeString(nonce) + `"`
 	}
-	script := `<script data-cfasync="false"` + nonceAttr + `>window.X_UI_BASE_PATH="` + escapedBase + `"`
-	if name != "login.html" {
-		escapedVer := jsEscape.Replace(config.GetPanelVersion())
-		script += `;window.X_UI_CUR_VER="` + escapedVer + `"`
-		script += `;window.X_UI_DB_TYPE="` + config.GetDBKind() + `"`
-	}
-	script += `;</script>`
+	script := `<script data-cfasync="false"` + nonceAttr + `>` + runtimeGlobals(basePath, name) + `;</script>`
 	inject := []byte(script)
 	inject = append(inject, csrfMeta...)
 	inject = append(inject, basePathMeta...)

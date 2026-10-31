@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useId } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import dayjs from 'dayjs';
@@ -6,6 +6,7 @@ import { Alert, Form, Input, InputNumber, Modal, Radio, Select, Switch, Tabs, me
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 
 import { HttpUtil, NumberFormatter, RandomUtil, SizeFormatter, Wireguard } from '@/utils';
+import { enabledProtocolValues } from '@/lib/customization';
 import type { RealityScanResult } from '@/generated/types';
 import {
   rawInboundToFormValues,
@@ -87,7 +88,6 @@ import SniffingTab from './SniffingTab';
 import type { DBInbound } from '@/models/dbinbound';
 import type { NodeRecord } from '@/api/queries/useNodesQuery';
 
-const PROTOCOL_OPTIONS = Object.values(Protocols).map((p) => ({ value: p, label: p }));
 const SHARE_ADDR_STRATEGIES = ['node', 'listen', 'custom'] as const;
 const SHARE_ADDR_HOSTNAME_RE =
   /^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*$/;
@@ -218,6 +218,14 @@ export default function InboundFormModal({
   availableNodesFetched = true,
 }: InboundFormModalProps) {
   const { t } = useTranslation();
+  const protocolOptions = useMemo(
+    () =>
+      (mode === 'edit' ? Object.values(Protocols) : enabledProtocolValues()).map((protocol) => ({
+        value: protocol,
+        label: protocol,
+      })),
+    [mode],
+  );
   const uid = useId();
   const [messageApi, messageContextHolder] = message.useMessage();
   const [modal, modalContextHolder] = Modal.useModal();
@@ -642,7 +650,7 @@ export default function InboundFormModal({
       )}
 
       <FormField name="protocol" label={t('pages.inbounds.protocol')}>
-        <Select id="protocol" disabled={mode === 'edit'} options={PROTOCOL_OPTIONS} />
+        <Select id="protocol" disabled={mode === 'edit'} options={protocolOptions} />
       </FormField>
 
       <FormField

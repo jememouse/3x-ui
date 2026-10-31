@@ -30,6 +30,8 @@ interface Window {
   X_UI_BASE_PATH?: string;
   X_UI_CUR_VER?: string;
   X_UI_DB_TYPE?: string;
+  X_UI_BRAND_NAME?: string;
+  X_UI_ENABLED_PROTOCOLS?: string[] | null;
   __SUB_PAGE_DATA__?: SubPageData;
 }
 

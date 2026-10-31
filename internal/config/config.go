@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -52,6 +53,45 @@ func GetBaseVersion() string {
 // GetName returns the name of the 3x-ui application.
 func GetName() string {
 	return strings.TrimSpace(name)
+}
+
+func GetBrandName() string {
+	brand := strings.TrimSpace(os.Getenv("XUI_BRAND_NAME"))
+	if brand == "" {
+		return "3X-UI"
+	}
+	return brand
+}
+
+func GetEnabledProtocols() []string {
+	raw := strings.TrimSpace(os.Getenv("XUI_ENABLED_PROTOCOLS"))
+	if raw == "" || strings.EqualFold(raw, "all") {
+		return nil
+	}
+
+	seen := make(map[string]struct{})
+	protocols := make([]string, 0)
+	for item := range strings.SplitSeq(raw, ",") {
+		protocol := strings.ToLower(strings.TrimSpace(item))
+		if protocol == "" {
+			continue
+		}
+		if _, exists := seen[protocol]; exists {
+			continue
+		}
+		seen[protocol] = struct{}{}
+		protocols = append(protocols, protocol)
+	}
+	return protocols
+}
+
+func IsProtocolEnabled(protocol string) bool {
+	protocols := GetEnabledProtocols()
+	if protocols == nil {
+		return true
+	}
+	protocol = strings.ToLower(strings.TrimSpace(protocol))
+	return slices.Contains(protocols, protocol)
 }
 
 // GetBuildCommit returns the short git commit this binary was built from, or an

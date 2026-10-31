@@ -71,3 +71,31 @@ func TestPWAHeadInjectionSkipsSubscriptionPage(t *testing.T) {
 		t.Fatalf("subpage injection = %q, want nil", got)
 	}
 }
+
+func TestRuntimeGlobalsInjectsPrivateProfileWithoutScriptBreakout(t *testing.T) {
+	t.Setenv("XUI_BRAND_NAME", `Private </script><script>alert(1)</script>`)
+	t.Setenv("XUI_ENABLED_PROTOCOLS", "vless,tuic")
+
+	got := runtimeGlobals("/private/", "index.html")
+	if strings.Contains(got, "</script>") {
+		t.Fatalf("runtime globals contain a script breakout: %q", got)
+	}
+	for _, want := range []string{
+		`window.X_UI_BASE_PATH="/private/"`,
+		`window.X_UI_BRAND_NAME="Private \u003c/script\u003e\u003cscript\u003ealert(1)\u003c/script\u003e"`,
+		`window.X_UI_ENABLED_PROTOCOLS=["vless","tuic"]`,
+		`window.X_UI_CUR_VER=`,
+		`window.X_UI_DB_TYPE=`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("runtime globals = %q, want substring %q", got, want)
+		}
+	}
+}
+
+func TestRuntimeGlobalsKeepsLoginPayloadMinimal(t *testing.T) {
+	got := runtimeGlobals("/", "login.html")
+	if strings.Contains(got, "X_UI_CUR_VER") || strings.Contains(got, "X_UI_DB_TYPE") {
+		t.Fatalf("login globals disclose panel metadata: %q", got)
+	}
+}

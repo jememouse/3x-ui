@@ -30,6 +30,7 @@ import {
 } from '@ant-design/icons';
 
 import { HttpUtil } from '@/utils';
+import { panelBrandMark, panelBrandName } from '@/lib/customization';
 import { formatPanelVersion } from '@/lib/panel-version';
 import { pauseAnimationsUntilLeave, useTheme } from '@/hooks/useTheme';
 import { useAllSettings } from '@/api/queries/useAllSettings';
@@ -187,6 +188,8 @@ export default function AppSidebar() {
 
   const currentTheme: 'light' | 'dark' = isDark ? 'dark' : 'light';
   const panelVersion = window.X_UI_CUR_VER || '';
+  const brandName = panelBrandName();
+  const brandMark = panelBrandMark();
 
   const tabs = useMemo<{ key: string; icon: ComponentType; title: string }[]>(
     () => [
@@ -367,7 +370,7 @@ export default function AppSidebar() {
       >
         <div className="sider-brand">
           <div className="brand-block">
-            <span className="brand-text">{railCollapsed ? '3X' : '3X-UI'}</span>
+            <span className="brand-text">{railCollapsed ? brandMark : brandName}</span>
           </div>
           {!railCollapsed && (
             <div className="brand-actions">
@@ -455,7 +458,7 @@ export default function AppSidebar() {
       >
         <div className="drawer-header">
           <div className="brand-block">
-            <span className="drawer-brand">3X-UI</span>
+            <span className="drawer-brand">{brandName}</span>
           </div>
           <div className="drawer-header-actions">
             <DocsButton ariaLabel={t('menu.docs') || 'Documentation'} />

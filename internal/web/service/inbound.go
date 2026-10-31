@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/amneziawg"
+	"github.com/mhsanaei/3x-ui/v3/internal/config"
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
@@ -1278,6 +1279,9 @@ func (s *InboundService) normalizeMtprotoXrayPort(inbound *model.Inbound, oldSet
 func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, bool, error) {
 	defer InvalidateSubData()
 	inbound.Id = 0
+	if !s.FromNodeSync && !config.IsProtocolEnabled(string(inbound.Protocol)) {
+		return inbound, false, fmt.Errorf("protocol %s is disabled by XUI_ENABLED_PROTOCOLS", inbound.Protocol)
+	}
 	if err := normalizeTuicSettings(inbound); err != nil {
 		return inbound, false, err
 	}

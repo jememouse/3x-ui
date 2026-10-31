@@ -79,3 +79,51 @@ func TestGetPortOverride(t *testing.T) {
 		})
 	}
 }
+
+func TestGetBrandName(t *testing.T) {
+	t.Setenv("XUI_BRAND_NAME", "")
+	if got := GetBrandName(); got != "3X-UI" {
+		t.Fatalf("empty brand = %q, want %q", got, "3X-UI")
+	}
+
+	t.Setenv("XUI_BRAND_NAME", "  Private Proxy  ")
+	if got := GetBrandName(); got != "Private Proxy" {
+		t.Fatalf("custom brand = %q, want %q", got, "Private Proxy")
+	}
+}
+
+func TestGetEnabledProtocols(t *testing.T) {
+	t.Setenv("XUI_ENABLED_PROTOCOLS", "")
+	if got := GetEnabledProtocols(); got != nil {
+		t.Fatalf("empty allowlist = %#v, want nil", got)
+	}
+
+	t.Setenv("XUI_ENABLED_PROTOCOLS", " VLESS, hysteria,tuic,vless , masque ")
+	want := []string{"vless", "hysteria", "tuic", "masque"}
+	got := GetEnabledProtocols()
+	if len(got) != len(want) {
+		t.Fatalf("allowlist = %#v, want %#v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("allowlist = %#v, want %#v", got, want)
+		}
+	}
+
+	if !IsProtocolEnabled("TUIC") {
+		t.Fatal("TUIC should be enabled case-insensitively")
+	}
+	if IsProtocolEnabled("http") {
+		t.Fatal("HTTP should be disabled by the allowlist")
+	}
+}
+
+func TestEnabledProtocolsAllDisablesFiltering(t *testing.T) {
+	t.Setenv("XUI_ENABLED_PROTOCOLS", "all")
+	if got := GetEnabledProtocols(); got != nil {
+		t.Fatalf("all allowlist = %#v, want nil", got)
+	}
+	if !IsProtocolEnabled("http") {
+		t.Fatal("all should leave every protocol enabled")
+	}
+}
